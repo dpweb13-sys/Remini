@@ -1,8 +1,10 @@
+import dotenv from 'dotenv';
+dotenv.config(); // ✅ dotenv fix
+
 import { Telegraf, Markup } from "telegraf";
 import fetch from "node-fetch";
 import FormData from "form-data";
 import pkg from "pg";
-import 'dotenv/config';
 
 const { Pool } = pkg;
 
@@ -91,65 +93,6 @@ bot.action("mycredits", async (ctx) => {
   ctx.reply(`💳 তোমার ক্রেডিট: ${user.credits}`);
 });
 
-// ===== Admin Panel =====
-bot.command("admin", async (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return ctx.reply("❌ অনুমতি নেই");
-  await ctx.reply(
-    "🛠 Admin Panel",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("📊 Stats", "stats")],
-      [Markup.button.callback("📢 Broadcast", "broadcast")],
-      [Markup.button.callback("➕ Add Credit", "addcredit")],
-      [Markup.button.callback("➖ Remove Credit", "remcredit")]
-    ])
-  );
-});
-
-bot.action("stats", async (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return;
-  const res = await pool.query("SELECT COUNT(*) FROM users");
-  ctx.reply(`📊 মোট ইউজার: ${res.rows[0].count}`);
-});
-
-bot.action("broadcast", async (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return;
-  ctx.reply("✉️ Broadcast message লিখে reply করো।");
-  bot.once("message", async (msgCtx) => {
-    const text = msgCtx.message.text || msgCtx.message.caption;
-    const res = await pool.query("SELECT id FROM users");
-    for (const row of res.rows) {
-      try { await bot.telegram.sendMessage(row.id, text); } catch {}
-    }
-    msgCtx.reply("✅ Broadcast পাঠানো হয়েছে!");
-  });
-});
-
-bot.action("addcredit", async (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return ctx.reply("User ID এবং Credit লিখে reply করো।\nFormat: 123456789 50");
-  bot.once("message", async (msgCtx) => {
-    const parts = msgCtx.message.text.split(" ");
-    const uid = Number(parts[0]);
-    const credit = Number(parts[1]);
-    const user = await getUser(uid);
-    if (!user) return msgCtx.reply("❌ User পাওয়া যায়নি।");
-    await updateCredits(uid, user.credits + credit);
-    msgCtx.reply(`✅ ${credit} credits add করা হলো ${uid} কে।`);
-  });
-});
-
-bot.action("remcredit", async (ctx) => {
-  if (ctx.from.id !== ADMIN_ID) return ctx.reply("User ID এবং Credit লিখে reply করো।\nFormat: 123456789 20");
-  bot.once("message", async (msgCtx) => {
-    const parts = msgCtx.message.text.split(" ");
-    const uid = Number(parts[0]);
-    const credit = Number(parts[1]);
-    const user = await getUser(uid);
-    if (!user) return msgCtx.reply("❌ User পাওয়া যায়নি।");
-    await updateCredits(uid, Math.max(user.credits - credit,0));
-    msgCtx.reply(`✅ ${credit} credits remove করা হলো ${uid} থেকে।`);
-  });
-});
-
 // ===== Photo Enhance =====
 bot.on("photo", async (ctx) => {
   const user = await getUser(ctx.from.id);
@@ -222,5 +165,6 @@ bot.action(/^getlink_(.+)/, async (ctx) => {
   );
 });
 
+// ===== Launch Bot =====
 bot.launch();
-console.log("🚀 Remini Bot full-featured running...");
+console.log("🚀 Remini Bot running with dotenv fix...");
